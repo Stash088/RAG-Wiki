@@ -7,4 +7,5 @@ ENV/
 env.bak/
 venv.bak/
 
+.architecture.png
 __pycache__/
