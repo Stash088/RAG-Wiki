@@ -1,9 +1,7 @@
 .env
 .env.local
-venv/
+venv
 env/
-/env
-/venv
 .venv/
 
 __pycache__/
