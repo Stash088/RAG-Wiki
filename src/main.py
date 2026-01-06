@@ -1,8 +1,7 @@
-from clients.WikipediaClient import WikipediaManager
+# src/main.py - если хотите чтобы он был основным
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import logging
-
-
-wiki_manager = WikipediaManager()
 
 # Настройка логирования
 logging.basicConfig(
@@ -10,17 +9,44 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-    # 1. Поиск статей
-print("\n1. Поиск статей:")
-search_results = wiki_manager.search_articles("искусственный интеллект", limit=3)
-for i, result in enumerate(search_results, 1):
-    print(f"  {i}. {result['title']} - {result['snippet'][:100]}...")
+logger = logging.getLogger(__name__)
+
+# Создаем app здесь
+app = FastAPI(
+    title="RAG Wikipedia API",
+    description="API для RAG системы с Wikipedia, Qdrant и Ollama",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Импортируем и подключаем роутеры
+from api.router import router
+from api.services import rag_service
+app.include_router(router)
+
+@app.on_event("startup")
+async def startup_event():
+    import time
     
-# 2. Получение полной статьи
-print("\n2. Получение полной статьи:")
-article = wiki_manager.fetch_article("искусственный интеллект")
-if article:
-    print(f"  Заголовок: {article['title']}")
-    print(f"  URL: {article['url']}")
-    print(f"  Длина текста: {len(article['text'])} символов")
-    print(f"  Первые 150 символов: {article['text'][:150]}...")
+    logger.info("Ждем инициализацию Ollama...")
+    time.sleep(1) 
+    """Инициализация при запуске приложения"""
+    rag_service.init_components()
+
+
+@app.get("/")
+async def root():
+    return {"message": "RAG API"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
